@@ -1,42 +1,62 @@
+from dataclasses import dataclass
+
 from typing import Optional, List
 
-from engine.maths import Vector
+from engine.vector import Vector, Direction
+from engine.observer import Observable
 
 
-class Matter:
+class Full(Exception):
     pass
 
 
-class Observer:
-    def point_changed(self, point: Vector, matter: Optional[Matter]):
-        pass
+class Empty(Exception):
+    pass
 
-class World:
+
+class Entity:
+    pass
+
+
+@dataclass
+class Cell:
+    entity: Entity
+    direction: Direction
+
+@dataclass
+class Body(Cell):
+    position: Vector
+
+class Changes:
+    pass
+
+class World(Observable[Changes]):
+
     def __init__(self, edge: Vector):
+        super(World, self).__init__()
         self.edge = edge
-        self.__grid__: List[Optional[Matter]] = [None] * edge.x * edge.y
-        self.observers: List[Observer] = []
+        self.__grid__: List[Optional[Body]] = [None] * edge.flat()
+        self.__entities__:  List[Body] = []
 
-    def subscribe(self, observer: Observer):
-        self.observers.append(observer)
+    def __setitem__(self, position: Vector, cell: Cell):
+        self.__delitem__(position)
 
-    def unsubscribe(self, observer: Observer):
-        self.observers.remove(observer)
+        body = Body(cell.entity, cell.direction, position)
+        self.__grid__[self.edge.deflate(position)] = body
+        self.__entities__.append(body)
 
-    def set(self, point: Vector, matter: Matter = None):
-        self.__grid__[point.flat_index_by_edge(self.edge)] = matter
-        for observer in self.observers:
-            observer.point_changed(point % self.edge, matter)
+    def __delitem__(self, position: Vector):
+        index = self.edge.deflate(position)
+        body = self.__grid__[index]
+        self.__grid__[index] = None
+        if body is not None:
+            self.__entities__.remove(body)
 
-    def get(self, point: Vector):
-        return self.__grid__[point.flat_index_by_edge(self.edge)]
+    def __getitem__(self, position: Vector) -> Optional[Cell]:
+        return self.__grid__[self.edge.deflate(position)]
 
-    def rows(self):
-        for y in range(self.edge.y):
-            offset = y * self.edge.x
-            yield self.__grid__[offset: offset + self.edge.x]
 
-    def scan(self):
-        for index, cell in enumerate(self.__grid__):
-            if cell is not None:
-                yield cell, self.edge.flat_index_to_point(index)
+
+
+
+

@@ -1,14 +1,15 @@
 from typing import Optional
 
-from engine.world import Observer, World, Matter
-from engine.maths import Vector
+from engine.observer import Observer
+from engine.world import World, Matter, Change
+from engine.vector import Vector
 
 
 def __cell_repr__(cell: Optional[Matter]):
     return ' ' if cell is None else '#'
 
 
-class Renderer(Observer):
+class Renderer(Observer[Change]):
     def __init__(self, world: World):
         self.world = world
         self.world_start = Vector(1, 1)
@@ -17,7 +18,7 @@ class Renderer(Observer):
         self.screen = '╔' + ('═' * self.world.edge.x) + '╗\n' + \
                       ''.join('║' + ''.join(map(__cell_repr__, row)) + '║\n' for row in self.world.rows()) + \
                       '╚' + ('═' * self.world.edge.x) + '╝\n'
-        world.subscribe(self)
+        world.observers.append(self)
 
     def __translate__(self, world_point: Vector):
         return self.world_start + world_point
@@ -29,9 +30,9 @@ class Renderer(Observer):
         i = self.__index_of__(world_point)
         self.screen = self.screen[:i] + __cell_repr__(matter) + self.screen[i + 1:]
 
-    def point_changed(self, world_point: Vector, matter: Optional[Matter]):
-        self.__update__(matter, world_point)
-        self.render()
+    def notify(self, event: Change):
+        pass
+    #     handlers?
 
     def render(self):
         print(self.screen)
