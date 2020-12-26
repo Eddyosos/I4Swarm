@@ -1,17 +1,6 @@
 from dataclasses import dataclass
-
-from typing import Optional, List
-
+from typing import Dict
 from engine.vector import Vector, Direction
-from engine.observer import Observable
-
-
-class Full(Exception):
-    pass
-
-
-class Empty(Exception):
-    pass
 
 
 class Entity:
@@ -23,40 +12,30 @@ class Cell:
     entity: Entity
     direction: Direction
 
-@dataclass
-class Body(Cell):
-    position: Vector
 
-class Changes:
-    pass
-
-class World(Observable[Changes]):
-
+class World:
     def __init__(self, edge: Vector):
-        super(World, self).__init__()
         self.edge = edge
-        self.__grid__: List[Optional[Body]] = [None] * edge.flat()
-        self.__entities__:  List[Body] = []
+        self.__grid__: Dict[Vector, Cell] = {}
+
+    def __getitem__(self, position: Vector):
+        return self.__grid__.get(position % self.edge)
 
     def __setitem__(self, position: Vector, cell: Cell):
-        self.__delitem__(position)
-
-        body = Body(cell.entity, cell.direction, position)
-        self.__grid__[self.edge.deflate(position)] = body
-        self.__entities__.append(body)
+        self.__grid__[position % self.edge] = cell
 
     def __delitem__(self, position: Vector):
-        index = self.edge.deflate(position)
-        body = self.__grid__[index]
-        self.__grid__[index] = None
-        if body is not None:
-            self.__entities__.remove(body)
+        del self.__grid__[position % self.edge]
 
-    def __getitem__(self, position: Vector) -> Optional[Cell]:
-        return self.__grid__[self.edge.deflate(position)]
+    def push(self, position: Vector, direction: Direction, strength: int):
+        if strength < 1 or self[position] is None:
+            return
+        destiny = position + direction
+        self.push(destiny, direction, strength - 1)
+        if self[destiny] is None:
+            self[destiny] = self[position]
+            del self[position]
 
-
-
-
-
-
+    def rotate(self, position: Vector, clockwise: bool):
+        cell = self[position]
+        cell.direction = cell.direction.rotate(clockwise)

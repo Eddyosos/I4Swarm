@@ -1,20 +1,19 @@
-from dataclasses import dataclass
 from enum import Enum
+from typing import NamedTuple
 
 
-@dataclass
-class Vector:
+class Vector(NamedTuple):
     x: int
     y: int
 
     def flat(self):
         return self.x * self.y
 
-    def deflate(self, other: 'Vector'):
+    def flatten(self, other: 'Vector'):
         n = other % self
         return n.x + n.y * self.x
 
-    def inflate(self, index: int):
+    def vectorize(self, index: int):
         return Vector(index % self.x, index // self.x % self.y)
 
     def __add__(self, other: 'Vector'):
@@ -25,7 +24,12 @@ class Vector:
 
 
 class Direction(Vector, Enum):
-    UP = (0, -1)
-    RIGHT = (1, 0)
-    DOWN = (0, 1)
-    LEFT = (-1, 0)
+    UP = Vector(0, -1)
+    RIGHT = Vector(1, 0)
+    DOWN = Vector(0, 1)
+    LEFT = Vector(-1, 0)
+
+    def rotate(self, clockwise: bool):
+        dirs = list(Direction)
+        index = dirs.index(self) + (1 if clockwise else -1)
+        return dirs[index % len(dirs)]
