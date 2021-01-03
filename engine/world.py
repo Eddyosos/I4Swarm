@@ -1,41 +1,43 @@
-from dataclasses import dataclass
-from typing import Dict
-from engine.vector import Vector, Direction
+from typing import Dict, Any
 
-
-class Entity:
-    pass
-
-
-@dataclass
-class Cell:
-    entity: Entity
-    direction: Direction
+from engine.vector import Direction, Vector, GridFixed
 
 
 class World:
+    class Body:
+        def __init__(self, entity: Any, position: Vector, direction: Direction, world: 'World'):
+            self.entity = entity
+            self.direction = direction
+            self.world = world
+            self.world.bodies[id(self)] = self
+            self._position = None
+            self.position = position
+
+        @property
+        def position(self):
+            return self._position
+
+        @position.setter
+        def position(self, position: Vector):
+            self.world.grid[position] = self
+            if self.position is not None:
+                del self.world.grid[self.position]
+            self._position = self.world.grid.simplify(position)
+
     def __init__(self, edge: Vector):
-        self.edge = edge
-        self.__grid__: Dict[Vector, Cell] = {}
+        self._grid: GridFixed[World.Body] = GridFixed(edge)
+        self._bodies: Dict[int, World.Body] = {}
 
-    def __getitem__(self, position: Vector):
-        return self.__grid__.get(position % self.edge)
+    @property
+    def grid(self):
+        return self._grid
 
-    def __setitem__(self, position: Vector, cell: Cell):
-        self.__grid__[position % self.edge] = cell
+    @property
+    def bodies(self):
+        return self._bodies
 
-    def __delitem__(self, position: Vector):
-        del self.__grid__[position % self.edge]
+    def __iter__(self):
+        return iter(self.bodies.values())
 
-    def push(self, position: Vector, direction: Direction, strength: int):
-        if strength < 1 or self[position] is None:
-            return
-        destiny = position + direction
-        self.push(destiny, direction, strength - 1)
-        if self[destiny] is None:
-            self[destiny] = self[position]
-            del self[position]
-
-    def rotate(self, position: Vector, clockwise: bool):
-        cell = self[position]
-        cell.direction = cell.direction.rotate(clockwise)
+    def insert(self, entity: Any, position: Vector, direction: Direction):
+        World.Body(entity, position, direction, self)

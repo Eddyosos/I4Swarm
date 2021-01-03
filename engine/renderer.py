@@ -1,38 +1,36 @@
-from typing import Optional
-
-from engine.world import World, Cell
+from engine.world import World
 from engine.vector import Vector, Direction
 
 
-def __cell_repr__(cell: Optional[Cell]):
-    return ' ' if cell is None else {
-        Direction.UP: '↑',
-        Direction.DOWN: '↓',
-        Direction.RIGHT: '→',
-        Direction.LEFT: '←'
-    }[cell.direction]
-
-
 class Renderer:
+    @staticmethod
+    def __body_repr__(body: World.Body = None):
+        return ' ' if body is None else {
+            Direction.FORWARD: '↑',
+            Direction.BACKWARD: '↓',
+            Direction.RIGHT: '→',
+            Direction.LEFT: '←'
+        }[body.direction]
+
     def __init__(self, world: World):
-        self.__world__ = world
-        self.__world_start__ = Vector(1, 1)
-        self.__world_end__ = world.edge + self.__world_start__
-        self.__edge__ = self.__world_end__ + Vector(2, 1)
+        self._world = world
+        self._world_start = Vector(1, 1)
+        self._world_end = world.grid.edge + self._world_start
+        self._edge = self._world_end + Vector(2, 1)
 
     def __blank__(self):
-        header = '╔' + ('═' * self.__world__.edge.x) + '╗\n'
-        body_r = '║' + (' ' * self.__world__.edge.x) + '║\n'
-        footer = '╚' + ('═' * self.__world__.edge.x) + '╝\n'
-        return header + body_r * self.__world__.edge.y + footer
+        header = '╔' + ('═' * self._world.grid.edge.x) + '╗\n'
+        body_r = '║' + (' ' * self._world.grid.edge.x) + '║\n'
+        footer = '╚' + ('═' * self._world.grid.edge.x) + '╝\n'
+        return header + body_r * self._world.grid.edge.y + footer
 
     def __index_of__(self, position):
-        return self.__edge__.flatten(self.__world_start__ + (position % self.__world__.edge))
+        return self._edge.flatten(self._world_start + (position % self._world.grid.edge))
 
     def render(self):
         screen = []
         screen[:0] = self.__blank__()
-        for position, cell in self.__world__.__grid__.items():
-            screen[self.__index_of__(position)] = __cell_repr__(cell)
+        for body in self._world:
+            screen[self.__index_of__(body.position)] = self.__body_repr__(body)
         print(''.join(screen))
 
