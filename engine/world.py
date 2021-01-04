@@ -24,6 +24,10 @@ class World:
                 del self.world.grid[self.position]
             self._position = self.world.grid.simplify(position)
 
+        def in_front(self):
+            in_front_position = self.direction.translate_vector(self.position)
+            return self.world.grid[in_front_position]
+
     def __init__(self, edge: Vector):
         self._grid: GridFixed[World.Body] = GridFixed(edge)
         self._bodies: Dict[int, World.Body] = {}
